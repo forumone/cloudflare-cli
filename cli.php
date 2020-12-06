@@ -68,3 +68,40 @@ function f1_cloudflare_cli() {
 	return F1_Cloudflare_CLI_Core::instance();
 }
 f1_cloudflare_cli();
+
+register_activation_hook( __FILE__, 'f1_cloudflare_cli_activation' );
+register_deactivation_hook( __FILE__, 'f1_cloudflare_cli_delete_transient' );
+
+add_action( 'activate_cloudflare/cloudflare.php', 'f1_cloudflare_cli_delete_transient' );
+add_action( 'deactivate_cloudflare/cloudflare.php', 'f1_cloudflare_cli_set_transient' );
+
+// Upon Cloudflare CLI Add-On activation
+function f1_cloudflare_cli_activation() {
+   if ( !is_plugin_active( 'cloudflare/cloudflare.php' ) ) {
+       f1_cloudflare_cli_set_transient();
+   }
+}
+
+// Set Cloudflare base plugin required transient
+function f1_cloudflare_cli_set_transient() {
+    if( !get_transient( 'f1_cloudflare_cli_dependency_required' ) ) {
+        set_transient( 'f1_cloudflare_cli_dependency_required', true );
+    }
+}
+
+// Delete Cloudflare base plugin required transient
+function f1_cloudflare_cli_delete_transient() {
+    if( get_transient( 'f1_cloudflare_cli_dependency_required' ) ) {
+        delete_transient( 'f1_cloudflare_cli_dependency_required' );
+    }
+}
+
+// Cloudflare base plugin required admin notice
+add_action( 'admin_notices', 'f1_cloudflare_cli_requires_cloudflare_notice' );
+function f1_cloudflare_cli_requires_cloudflare_notice() {
+    if( get_transient('f1_cloudflare_cli_dependency_required' )){
+        $class = 'notice notice-error';
+        $message = __( '<strong>Cloudflare CLI Add-On</strong> requires <a target="_blank" href="https://wordpress.org/plugins/cloudflare/">Cloudflare plugin</a> version 3.4 or greater.', 'cloudflare-cli' );
+        printf( '<div class="%1$s"><p>%2$s</p></div>', esc_attr( $class ),  $message );
+    }
+}
